@@ -8,7 +8,8 @@
 #import "OCAnnotation.h"
 
 @interface OCAnnotation ()
-@property (nonatomic, strong) NSMutableArray *annotationsInCluster;
+@property (nonatomic, strong) NSMutableSet *annotationsSetInCluster;
+@property (nonatomic, assign) CLLocationCoordinate2D cachedCoordinate;
 @end
 
 @implementation OCAnnotation
@@ -17,7 +18,8 @@
 {
     self = [super init];
     if (self) {
-        _annotationsInCluster = [[NSMutableArray alloc] init];
+        _annotationsSetInCluster = [[NSMutableSet alloc] init];
+        _cachedCoordinate = kCLLocationCoordinate2DInvalid;
     }
     return self;
 }
@@ -27,8 +29,9 @@
     self = [self init];
     if (self) {
         _coordinate = [annotation coordinate];
-        [_annotationsInCluster addObject:annotation];
-        
+        [_annotationsSetInCluster addObject:annotation];
+        _cachedCoordinate = kCLLocationCoordinate2DInvalid;
+
         if ([annotation respondsToSelector:@selector(title)]) {
             self.title = [annotation title];
         }
@@ -36,7 +39,7 @@
             self.subtitle = [annotation subtitle];
         }
     }
-    
+
     return self;
 }
 
@@ -45,7 +48,7 @@
 // read only
 - (NSArray*)annotationsInCluster;
 {
-    return [_annotationsInCluster copy];
+    return [_annotationsSetInCluster allObjects];
 }
 
 #pragma mark add / remove annotations
@@ -53,7 +56,8 @@
 - (void)addAnnotation:(id<MKAnnotation>)annotation;
 {
     // Add annotation to the cluster
-    [_annotationsInCluster addObject:annotation];
+    [_annotationsSetInCluster addObject:annotation];
+    _cachedCoordinate = kCLLocationCoordinate2DInvalid;
 }
 
 - (void)addAnnotations:(NSArray *)annotations;
@@ -66,7 +70,8 @@
 - (void)removeAnnotation:(id<MKAnnotation>)annotation;
 {
     // Remove annotation from cluster
-    [_annotationsInCluster removeObject:annotation];
+    [_annotationsSetInCluster removeObject:annotation];
+    _cachedCoordinate = kCLLocationCoordinate2DInvalid;
 }
 
 - (void)removeAnnotations:(NSArray*)annotations;
@@ -80,23 +85,28 @@
 
 - (CLLocationCoordinate2D)coordinate;
 {
-    if (self.annotationsInCluster.count == 0) return CLLocationCoordinate2DMake(0, 0);
-    
+    if (self.annotationsSetInCluster.count == 0) return CLLocationCoordinate2DMake(0, 0);
+
+    if (CLLocationCoordinate2DIsValid(self.cachedCoordinate)) {
+        return self.cachedCoordinate;
+    }
+
     // find max/min coords
-    CLLocationCoordinate2D min = [self.annotationsInCluster[0] coordinate];
-    CLLocationCoordinate2D max = [self.annotationsInCluster[0] coordinate];
-    for (id<MKAnnotation> annotation in self.annotationsInCluster) {
+    CLLocationCoordinate2D min = [self.annotationsSetInCluster.anyObject coordinate];
+    CLLocationCoordinate2D max = [self.annotationsSetInCluster.anyObject coordinate];
+    for (id<MKAnnotation> annotation in self.annotationsSetInCluster) {
         min.latitude = MIN(min.latitude, annotation.coordinate.latitude);
         min.longitude = MIN(min.longitude, annotation.coordinate.longitude);
         max.latitude = MAX(max.latitude, annotation.coordinate.latitude);
         max.longitude = MAX(max.longitude, annotation.coordinate.longitude);
     }
-    
+
     // calc center
     CLLocationCoordinate2D center = min;
     center.latitude += (max.latitude-min.latitude)/2.0;
     center.longitude += (max.longitude-min.longitude)/2.0;
-    
+
+    self.cachedCoordinate = center;
     return center;
 }
 
@@ -104,16 +114,18 @@
 
 - (BOOL)isEqual:(OCAnnotation*)annotation;
 {
+    if (annotation == self) {
+        return YES;
+    }
+
     if (![annotation isKindOfClass:[OCAnnotation class]]) {
         return NO;
     }
-    
-    return (self.coordinate.latitude == annotation.coordinate.latitude &&
-            self.coordinate.longitude == annotation.coordinate.longitude &&
+
+    return ([self.groupTag isEqualToString:annotation.groupTag] &&
             [self.title isEqualToString:annotation.title] &&
             [self.subtitle isEqualToString:annotation.subtitle] &&
-            [self.groupTag isEqualToString:annotation.groupTag] &&
-            [self.annotationsInCluster isEqual:annotation.annotationsInCluster]);
+            [self.annotationsSetInCluster isEqual:annotation.annotationsSetInCluster]);
 }
 
 @end
