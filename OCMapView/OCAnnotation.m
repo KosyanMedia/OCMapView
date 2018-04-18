@@ -7,6 +7,18 @@
 
 #import "OCAnnotation.h"
 
+/// Compares two objects using -isEqual:. For the border case where both objects
+/// are nil, it returns YES too (whereas [nil isEqual:nil] == NO and this leads
+/// to incorrect comparison behaviour...)
+static BOOL eql(id a, id b)
+{
+    if (a == b) {
+        return YES;
+    } else {
+        return [a isEqual:b];
+    }
+}
+
 @interface OCAnnotation ()
 @property (nonatomic, strong) NSMutableSet *annotationsSetInCluster;
 @property (nonatomic, assign) CLLocationCoordinate2D cachedCoordinate;
@@ -122,10 +134,15 @@
         return NO;
     }
 
-    return ([self.groupTag isEqualToString:annotation.groupTag] &&
-            [self.title isEqualToString:annotation.title] &&
-            [self.subtitle isEqualToString:annotation.subtitle] &&
-            [self.annotationsSetInCluster isEqual:annotation.annotationsSetInCluster]);
+    return (eql(self.groupTag, annotation.groupTag) &&
+            eql(self.title, annotation.title) &&
+            eql(self.subtitle, annotation.subtitle) &&
+            eql(self.annotationsSetInCluster, annotation.annotationsSetInCluster));
+}
+
+- (NSUInteger)hash
+{
+    return self.groupTag.hash + self.title.hash + self.subtitle.hash + self.annotationsSetInCluster.hash;
 }
 
 @end
