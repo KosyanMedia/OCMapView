@@ -37,6 +37,9 @@
  default: YES*/
 @property(nonatomic, assign) BOOL clusteringEnabled;
 
+// Pause clustering
+@property(nonatomic, assign) BOOL clusteringPaused;
+
 //
 /// Defines the clustering algorithm which should be used.
 /** @see OCClusteringMethod for more information

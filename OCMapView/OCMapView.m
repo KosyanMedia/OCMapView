@@ -129,10 +129,22 @@
     }
 }
 
+- (void)setClusteringPaused:(BOOL)clusteringPaused {
+    _clusteringPaused = clusteringPaused;
+
+    if (clusteringPaused) {
+        [self doClustering];
+    }
+}
+
 #pragma mark - Clustering
 
 - (void)doClustering;
 {
+    if (self.clusteringPaused) {
+        return;
+    }
+
     // only recluster if, annotations did change, map was zoomed or,
     // map was panned significantly
     if(!self.neeedsClustering && !MKMapRectIsNull(self.lastRefreshedMapRect) &&
