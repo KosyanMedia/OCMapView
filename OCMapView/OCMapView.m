@@ -11,7 +11,7 @@
 @property (nonatomic, strong) NSMutableSet *allAnnotations;
 @property (nonatomic) MKCoordinateRegion lastRefreshedMapRegion;
 @property (nonatomic) MKMapRect lastRefreshedMapRect;
-@property (nonatomic) BOOL neeedsClustering;
+@property (nonatomic) BOOL needsClustering;
 
 @property (nonatomic, strong) NSArray *reclusterOnChangeProperties;
 @end
@@ -47,7 +47,7 @@
     _clusteringEnabled = YES;
     _clusterByGroupTag = NO;
     _clusterInvisibleViews = NO;
-    _neeedsClustering = YES;
+    _needsClustering = YES;
     
     // define relevant properties (those, which will affect the clustering)
     self.reclusterOnChangeProperties = @[@"annotationsToIgnore",
@@ -78,19 +78,19 @@
 
 - (void)addAnnotation:(id < MKAnnotation >)annotation{
     [_allAnnotations addObject:annotation];
-    self.neeedsClustering = YES;
+    self.needsClustering = YES;
     [self doClustering];
 }
 
 - (void)addAnnotations:(NSArray *)annotations{
     [_allAnnotations addObjectsFromArray:annotations];
-    self.neeedsClustering = YES;
+    self.needsClustering = YES;
     [self doClustering];
 }
 
 - (void)removeAnnotation:(id < MKAnnotation >)annotation{
     [_allAnnotations removeObject:annotation];
-    self.neeedsClustering = YES;
+    self.needsClustering = YES;
     [self doClustering];
 }
 
@@ -98,7 +98,7 @@
     for (id<MKAnnotation> annotation in annotations) {
         [_allAnnotations removeObject:annotation];
     }
-    self.neeedsClustering = YES;
+    self.needsClustering = YES;
     [self doClustering];
 }
 
@@ -124,7 +124,7 @@
     if ([self.reclusterOnChangeProperties containsObject:keyPath]) {
         if (![[change objectForKey:NSKeyValueChangeNewKey]
               isEqual:[change objectForKey:NSKeyValueChangeOldKey]]) {
-            self.neeedsClustering = YES;
+            self.needsClustering = YES;
         }
     }
 }
@@ -147,7 +147,7 @@
 
     // only recluster if, annotations did change, map was zoomed or,
     // map was panned significantly
-    if(!self.neeedsClustering && !MKMapRectIsNull(self.lastRefreshedMapRect) &&
+    if(!self.needsClustering && !MKMapRectIsNull(self.lastRefreshedMapRect) &&
        ![self mapWasZoomed] && ![self mapWasPannedSignificantly]){
         // no update needed
         return;
@@ -222,7 +222,7 @@
     // update last rects & needs clustering
     self.lastRefreshedMapRect = self.visibleMapRect;
     self.lastRefreshedMapRegion = self.region;
-    self.neeedsClustering = NO;
+    self.needsClustering = NO;
 }
 
 #pragma mark map rect changes tracking
